@@ -8,8 +8,14 @@
     - nginx
     - nginx-extras
 
-- name: Copier le fichier de configuration templaté de nginx
+- name: Copier la configuration globale de nginx
   template:
     src: nginx.conf.j2
     dest: /etc/nginx/nginx.conf
+  become: true
+
+- name: Copier la configuration du serveur web
+  template:
+    src: default.conf.j2
+    dest: /etc/nginx/sites-available/default
   become: true

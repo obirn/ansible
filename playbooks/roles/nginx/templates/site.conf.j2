@@ -9,23 +9,31 @@ add_header Content-Security-Policy "default-src 'self';" always;    # On précis
 add_header X-Content-Type-Options "nosniff" always; # évite le 'sniffing' sur IE et Chrome
 
 # Serveur HTTP classique, redirigeant sur le serveur HTTPS
-# Pour des raisons évidentes, l'utilisation de HTTP est limitée au minimum.
 server {
     listen 80;                              # IPv4, on écoute sur le port 80, http par défaut
-    listen [::]:80;                         # IPv6
 
     return 301 https://$host$request_uri;   # On redirige le client vers la même page en https.
 }
 
-# Exemple de serveur reverse-proxy sur HTTPS
+
+# Serveur HTTPS (192.168.3.2)
 server {
     listen 443 ssl;             # IPv4, on écoute sur le port HTTPS (443)
-    listen [::]:443;            # IPv6
 
-    server_name wiki.salo.pe;   # Ce serveur répond au host 'wiki.salo.pe'
+    server_name 192.168.3.2;   # Ce serveur répond au host '192.168.3.2'
 
-    location / {                # Pour n'importe quel fichier demandé
-        proxy_pass http://localhost:8080/;  # On redirige la requete vers localhost sur le port 8080 en HTTP
+    # La requête vers https://192.168.3.2/ renvoie la page index.html qui contient le texte « TOP GUN » ;
+    location / {
+        # Renvoie index.html par défaut
+        index index.html;
+    }
+
+    # La requête vers https://192.168.3.2/blog renvoie vers https://blog.epitaf.local/blog/ ;
+    location /blog {
+        # Proxy pass vers blog.epitaf.local
+        proxy_pass http://blog.epitaf.local/blog/;
+        proxy_set_header Host $host;  # On passe le header Host
+        proxy_set_header X-Real-IP $remote_addr;  # On passe l'adresse IP du client
     }
 
     ssl_certificate <chemin vers le certificat>;        # On spécifie le certificat
@@ -40,20 +48,22 @@ server {
     add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
 }
 
-# Exemple de serveur web HTTPS
+# Serveur HTTPS (https://blog.epitaf.local)
 server {
-    listen 443 ssl;
-    listen [::]:443;
+    listen 443 ssl;             # IPv4, on écoute sur le port HTTPS (443)
 
-    server_name grosse.salo.pe;
+    server_name blog.epitaf.local;   # Ce serveur répond au host 'blog.epitaf.local'
 
-    root /var/www/html;     # On spécifie la racine du serveur
-    index index.html;       # On spécifie le fichier par défaut
+    # la requête vers https://www.epitaf.local/ renvoie la page index.html qui contient le texte « TOP GUN »
+    location / {
+        # Renvoie index.html par défaut
+        index index.html;
+    }
 
-    error_page 404 /error_404.html;     # On change la page 404
-    location /error_404.html {          # et on spécifie sa localisation
-        root /etc/nginx/ressources;
-        internal;
+    # la requête vers https://blog.epitaf.local/blog/ transmet la requête au serveur Apache via la boucle locale
+    location /blog {
+        # Proxy pass vers le serveur Apache
+        proxy_pass http://localhost:8000
     }
 
     ssl_certificate <chemin vers le certificat>;        # On spécifie le certificat
@@ -65,6 +75,5 @@ server {
     ssl_stapling on;            # On active la réponse OCSP
     ssl_stapling_verify on;     # et on la vérifie
 
-    add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
+    add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme
 }
-
