@@ -19,3 +19,9 @@
     src: default.conf.j2
     dest: /etc/nginx/sites-available/default
   become: true
+
+- name: Copier les certificats SSL
+  copy:
+    src: ssl/
+    dest: /etc/nginx/ssl/
+  become: true
