@@ -1,0 +1,42 @@
+<IfModule mod_security2.c>
+    # Activation des fonctionnalités de base
+    SecStatusEngine On
+    SecRuleEngine On
+    SecAuditEngine On
+    SecRequestBodyAccess On
+    SecResponseBodyAccess On
+    
+    # Configuration des logs
+    SecAuditLog "{{ sec_audit_log | default('/var/log/apache2/modsec_audit.log') }}"
+    SecAuditLogParts "{{ sec_audit_log_parts | default('ABIFHZ') }}"
+    SecDebugLog /var/log/apache2/modsec_debug.log
+    SecDebugLogLevel 0
+    
+    # Règle GET / POST / PUT : EPITA
+    SecRule REQUEST_METHOD "@pm GET POST PUT" \
+        "id:1000,\
+        phase:2,\
+        t:none,\
+        msg:'EPITA keyword detected',\
+        severity:'CRITICAL',\
+        logdata:'Matched Data: %{TX.0}',\
+        tag:'security',\
+        deny,\
+        status:403,\
+        chain"
+        SecRule ARGS|REQUEST_HEADERS|REQUEST_BODY "@contains EPITA" \
+            "t:none,\
+            ctl:auditLogParts=+E"
+    
+    # Configuration supplémentaire
+    SecServerSignature "{{ sec_server_signature | default('Apache') }}"
+    {% if sec_rule_remove_by_id is defined %}
+    SecRuleRemoveById {{ sec_rule_remove_by_id }}
+    {% endif %}
+        
+    # Optimisation des performances
+    SecRequestBodyLimit 10485760
+    SecResponseBodyLimit 524288
+    SecTmpDir /tmp/
+    SecDataDir /tmp/
+</IfModule>

@@ -1,0 +1,6 @@
+---
+apache_conf_dir: "/etc/apache2/conf-available"
+sec_audit_log: "/var/log/apache2/modsec_audit.log"  # Chemin corrigé
+sec_audit_log_parts: "ABIFHZ"                       # Headers + Body
+sec_server_signature: "Apache"
+sec_rule_remove_by_id: "960017,970901,960015"

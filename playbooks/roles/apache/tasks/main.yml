@@ -1,0 +1,44 @@
+---
+- name: Installation apache2
+  apt:
+    name:
+      - apache2
+    update_cache: yes
+    state: latest
+
+- name: Installation de la lib mod_security2 & a2enconf
+  apt:
+    name:
+      - libapache2-mod-security2
+    update_cache: yes
+    state: present
+
+- name: Le dossier de log existe 
+  file:
+    path: /var/log/apache2
+    state: directory
+    owner: root
+    group: www-data
+    mode: 0775
+
+- name: Activation des modules requis
+  apache2_module:
+    state: present
+    name: "{{ item }}"
+  loop:
+    - rewrite
+    - headers
+    - security2
+
+- name: Deploiement du fichier modsecurity.conf
+  template:
+    src: "modsecurity.conf.j2"
+    dest: "{{ apache_conf_dir }}/modsecurity.conf"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Activation de la config mod_securit2
+  command: "a2enconf modsecurity.conf"
+  notify:
+  - reload apache2

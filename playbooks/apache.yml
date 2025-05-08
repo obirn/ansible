@@ -1,0 +1,7 @@
+---
+- name: Déploiement complet de Apache
+  hosts: infra_01
+  become: yes
+  roles:
+    - apache
+
