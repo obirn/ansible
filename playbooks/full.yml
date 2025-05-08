@@ -4,3 +4,6 @@
     - name: Load and execute NGINX role
       ansible.builtin.include_role:
         name: roles/nginx
+    - name: Load and execute SSH role
+      ansible.builtin.include_role:
+        name: roles/ssh
