@@ -1,4 +1,4 @@
-- name: Install OpenSSH Server and Google Authenticator
+- name: Installation d'OpenSSH Server et Google Authenticator
   ansible.builtin.apt:
     name:
       - openssh-server
@@ -7,7 +7,7 @@
     update_cache: yes
   become: yes
 
-- name: Deploy SSH configuration
+- name: Déploiement de la configuration SSH
   ansible.builtin.template:
     src: sshd_config.j2
     dest: /etc/ssh/sshd_config
@@ -17,7 +17,7 @@
   notify: Restart SSH
   become: yes
 
-- name: Ensure pam_google_authenticator is in PAM config
+- name: Vérification que pam_google_authenticator est dans la config PAM
   ansible.builtin.lineinfile:
     path: /etc/pam.d/sshd
     regexp: '^auth required pam_google_authenticator.so'
@@ -26,18 +26,18 @@
     create: yes
   become: yes
 
-- name: Ensure SSH is enabled and started
+- name: Vérification que le service SSH est actif et démarré
   ansible.builtin.service:
     name: ssh
     state: started
     enabled: true
 
-- name: Create TOPGUN group
+- name: Création du groupe TOPGUN
   ansible.builtin.group:
     name: TOPGUN
   become: yes
 
-- name: Create users
+- name: Création d'utilisateurs
   ansible.builtin.user:
     name: "{{ item.name }}"
     group: TOPGUN
@@ -50,7 +50,7 @@
     - { name: 'goose' }
   become: yes
 
-- name: Setup sudoers for users
+- name: Mise en place de sudoers pour les utilisateurs
   ansible.builtin.copy:
     dest: "/etc/sudoers.d/{{ item.name }}"
     content: "{{ item.rule }}"
@@ -61,7 +61,7 @@
   notify: Restart SSH
   become: yes
 
-- name: Restrict goose SSH access (chroot, shell limited, etc.)
+- name: Restriction des accès SSH à l'utilisateur goose
   ansible.builtin.user:
     name: goose
     shell: /usr/sbin/nologin
