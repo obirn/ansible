@@ -1,0 +1,6 @@
+- name: Load and execute every role
+  hosts: webservers
+  tasks:
+    - name: Load and execute NGINX role
+      ansible.builtin.include_role:
+        name: roles/nginx

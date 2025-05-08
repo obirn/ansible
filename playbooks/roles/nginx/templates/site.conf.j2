@@ -1,0 +1,70 @@
+# On fait ses configurations pour cacher l'utilisation dans les headers d'un serveur nginx
+server_tokens off;          # cache le numéro de version dans les headers
+more_set_headers 'Server';  # cache le header Server
+
+add_header X-XSS-Protection "1: mode=block" always; # évite les attaques XSS
+add_header X-Frame_Options "SAMEORIGIN" always;     # évite le 'clickjacking'
+add_header Permission-Policy "";                    # on utilise pas d'API
+add_header Content-Security-Policy "default-src 'self';" always;    # On précise que tout le contenu du site proviendra de la même origine. Cette option est très souvent retirée car trop restrictive.
+add_header X-Content-Type-Options "nosniff" always; # évite le 'sniffing' sur IE et Chrome
+
+# Serveur HTTP classique, redirigeant sur le serveur HTTPS
+# Pour des raisons évidentes, l'utilisation de HTTP est limitée au minimum.
+server {
+    listen 80;                              # IPv4, on écoute sur le port 80, http par défaut
+    listen [::]:80;                         # IPv6
+
+    return 301 https://$host$request_uri;   # On redirige le client vers la même page en https.
+}
+
+# Exemple de serveur reverse-proxy sur HTTPS
+server {
+    listen 443 ssl;             # IPv4, on écoute sur le port HTTPS (443)
+    listen [::]:443;            # IPv6
+
+    server_name wiki.salo.pe;   # Ce serveur répond au host 'wiki.salo.pe'
+
+    location / {                # Pour n'importe quel fichier demandé
+        proxy_pass http://localhost:8080/;  # On redirige la requete vers localhost sur le port 8080 en HTTP
+    }
+
+    ssl_certificate <chemin vers le certificat>;        # On spécifie le certificat
+    ssl_certificate_key <chemin vers la clé privée>;    # et sa clé privée
+
+    ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
+    ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
+    ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
+    ssl_stapling on;            # On active la réponse OCSP
+    ssl_stapling_verify on;     # et on la vérifie
+
+    add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
+}
+
+# Exemple de serveur web HTTPS
+server {
+    listen 443 ssl;
+    listen [::]:443;
+
+    server_name grosse.salo.pe;
+
+    root /var/www/html;     # On spécifie la racine du serveur
+    index index.html;       # On spécifie le fichier par défaut
+
+    error_page 404 /error_404.html;     # On change la page 404
+    location /error_404.html {          # et on spécifie sa localisation
+        root /etc/nginx/ressources;
+        internal;
+    }
+
+    ssl_certificate <chemin vers le certificat>;        # On spécifie le certificat
+    ssl_certificate_key <chemin vers la clé privée>;    # et sa clé privée
+
+    ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
+    ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
+    ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
+    ssl_stapling on;            # On active la réponse OCSP
+    ssl_stapling_verify on;     # et on la vérifie
+
+    add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
+}
+
