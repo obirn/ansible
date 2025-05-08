@@ -1,5 +1,5 @@
 ---
-- name: Installer les paquets de nginx 
+- name: Installer les paquets nécéssaires
   ansible.builtin.apt:
     name: "{{ item }}"
     state: present
@@ -8,20 +8,34 @@
     - nginx
     - nginx-extras
 
-- name: Copier la configuration globale de nginx
-  template:
+- name: Copier le site web static 'top gun'
+  ansible.builtin.copy:
+    src: sites/topgun/
+    dest: /var/www/html/
+    mode: '0644'
+  become: true
+  notify: Restart nginx
+
+- name: Copier la configuration globale
+  ansible.builtin.template:
     src: nginx.conf.j2
     dest: /etc/nginx/nginx.conf
+    mode: '0644'
   become: true
+  notify: Restart nginx
 
 - name: Copier la configuration du serveur web
-  template:
+  ansible.builtin.template:
     src: default.conf.j2
     dest: /etc/nginx/sites-available/default
+    mode: '0644'
   become: true
+  notify: Restart nginx
 
 - name: Copier les certificats SSL
-  copy:
+  ansible.builtin.copy:
     src: ssl/
     dest: /etc/nginx/ssl/
+    mode: '0644'
   become: true
+  notify: Restart nginx

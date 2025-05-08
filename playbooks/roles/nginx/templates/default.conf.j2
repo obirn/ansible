@@ -1,13 +1,3 @@
-# On fait ses configurations pour cacher l'utilisation dans les headers d'un serveur nginx
-server_tokens off;          # cache le numéro de version dans les headers
-more_set_headers 'Server';  # cache le header Server
-
-add_header X-XSS-Protection "1: mode=block" always; # évite les attaques XSS
-add_header X-Frame_Options "SAMEORIGIN" always;     # évite le 'clickjacking'
-add_header Permission-Policy "";                    # on utilise pas d'API
-add_header Content-Security-Policy "default-src 'self';" always;    # On précise que tout le contenu du site proviendra de la même origine. Cette option est très souvent retirée car trop restrictive.
-add_header X-Content-Type-Options "nosniff" always; # évite le 'sniffing' sur IE et Chrome
-
 # Serveur HTTP classique, redirigeant sur le serveur HTTPS
 server {
     listen 80;                              # IPv4, on écoute sur le port 80, http par défaut
@@ -16,64 +6,60 @@ server {
 }
 
 
-# Serveur HTTPS (192.168.3.2)
 server {
     listen 443 ssl;             # IPv4, on écoute sur le port HTTPS (443)
 
-    server_name 192.168.3.2;   # Ce serveur répond au host '192.168.3.2'
+    server_name 172.20.10.2;   # Ce serveur répond au host '192.168.3.2'
 
-    # La requête vers https://192.168.3.2/ renvoie la page index.html qui contient le texte « TOP GUN » ;
     location / {
-        # Renvoie index.html par défaut
         index index.html;
     }
 
-    # La requête vers https://192.168.3.2/blog renvoie vers https://blog.epitaf.local/blog/ ;
     location /blog {
-        # Proxy pass vers blog.epitaf.local
         proxy_pass http://blog.epitaf.local/blog/;
         proxy_set_header Host $host;  # On passe le header Host
         proxy_set_header X-Real-IP $remote_addr;  # On passe l'adresse IP du client
     }
 
-    ssl_certificate <chemin vers le certificat>;        # On spécifie le certificat
-    ssl_certificate_key <chemin vers la clé privée>;    # et sa clé privée
+    ssl_certificate /etc/nginx/ssl/nginx.crt;        # On spécifie le certificat
+    ssl_certificate_key /etc/nginx/ssl/nginx.key;    # et sa clé privée
 
-    ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
-    ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
-    ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
-    ssl_stapling on;            # On active la réponse OCSP
-    ssl_stapling_verify on;     # et on la vérifie
+    # ssl_client_certificate /etc/nginx/ssl/ca.crt;
+    # ssl_verify_client on;
 
-    add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
+
+    # ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
+    # ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
+    # ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
+    # ssl_stapling on;            # On active la réponse OCSP
+    # ssl_stapling_verify on;     # et on la vérifie
+
+    # add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
 }
 
-# Serveur HTTPS (https://blog.epitaf.local)
-server {
-    listen 443 ssl;             # IPv4, on écoute sur le port HTTPS (443)
+# server { listen 443 ssl;
+    # server_name blog.epitaf.local;
 
-    server_name blog.epitaf.local;   # Ce serveur répond au host 'blog.epitaf.local'
+    # location / {
+        # index index.html;
+    # }
 
-    # la requête vers https://www.epitaf.local/ renvoie la page index.html qui contient le texte « TOP GUN »
-    location / {
-        # Renvoie index.html par défaut
-        index index.html;
-    }
+    # location /blog {
+        # # Proxy pass vers le serveur Apache
+        # proxy_pass http://localhost:8000
+    # }
 
-    # la requête vers https://blog.epitaf.local/blog/ transmet la requête au serveur Apache via la boucle locale
-    location /blog {
-        # Proxy pass vers le serveur Apache
-        proxy_pass http://localhost:8000
-    }
+    # ssl_certificate /etc/nginx/ssl/nginx.crt;        # On spécifie le certificat
+    # ssl_certificate_key /etc/nginx/ssl/nginx.key;    # et sa clé privée
 
-    ssl_certificate <chemin vers le certificat>;        # On spécifie le certificat
-    ssl_certificate_key <chemin vers la clé privée>;    # et sa clé privée
+    # ssl_client_certificate /etc/nginx/ssl/ca.crt;
+    # ssl_verify_client on;
 
-    ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
-    ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
-    ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
-    ssl_stapling on;            # On active la réponse OCSP
-    ssl_stapling_verify on;     # et on la vérifie
+    # # ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
+    # # ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
+    # # ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
+    # # ssl_stapling on;            # On active la réponse OCSP
+    # # ssl_stapling_verify on;     # et on la vérifie
 
-    add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme
-}
+    # # add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme
+# }

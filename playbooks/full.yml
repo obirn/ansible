@@ -3,4 +3,4 @@
   tasks:
     - name: Load and execute NGINX role
       ansible.builtin.include_role:
-        name: roles/nginx
+        name: nginx
