@@ -8,10 +8,10 @@
     - nginx
     - nginx-extras
 
-- name: Copier la page 404
+- name: Copier les pages d'erreurs
   ansible.builtin.copy:
-    src: sites/404.html
-    dest: /var/www/html/404.html
+    src: errors/
+    dest: /var/www/html/errors/
     mode: '0644'
   become: true
 

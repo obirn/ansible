@@ -26,7 +26,30 @@ http {
 	include /etc/nginx/mime.types;
 	default_type application/octet-stream;
     # Customiser page 404 pour cacher celle de nginx
-    error_page 404 /404.html;
+	# Répertoire racine des serveurs
+    root /var/www/html;
+
+
+	##
+	# Paramètres des pages d'erreues
+	##
+
+    # On customize les pages d'erreurs afin de cacher celles de nginx
+    error_page 401 /errors/400.html;
+    error_page 401 /errors/401.html;
+    error_page 403 /errors/403.html;
+    error_page 404 /errors/404.html;
+    error_page 405 /errors/405.html;
+    error_page 408 /errors/408.html;
+    error_page 413 /errors/413.html;
+    error_page 414 /errors/414.html;
+    error_page 429 /errors/429.html;
+    error_page 500 /errors/500.html;
+    error_page 502 /errors/502.html;
+    error_page 503 /errors/503.html;
+    error_page 504 /errors/504.html;
+	# Codes d'erreurs customisés pour les erreurs de certificats
+    error_page 495 496 497 /errors/400.html;
 
 
 	##
@@ -53,7 +76,18 @@ http {
 
 	# On précise les protocoles SSH acceptés
 	ssl_protocols TLSv1.2 TLSv1.3;
+	# On force l'utilisation de nos ciphers
 	ssl_prefer_server_ciphers on;
+	# On précise ciphers acceptés
+    ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
+	# On active HSTS contre les attaques d'Homme
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    # On spécifie le certificat et sa clé privée
+    ssl_certificate /etc/nginx/ssl/nginx.crt;        
+    ssl_certificate_key /etc/nginx/ssl/nginx.key;
+	# On active mTLS
+    ssl_client_certificate /etc/nginx/ssl/ca.crt;
+    ssl_verify_client on;
 
 	##
 	# Logging Settings

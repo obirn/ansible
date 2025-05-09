@@ -7,11 +7,10 @@ server {
 
 
 server {
-    root /var/www/html;        # On précise le répertoire racine du serveur
-
-    listen 443 ssl;             # IPv4, on écoute sur le port HTTPS (443)
-
-    server_name 172.20.10.2;   # Ce serveur répond au host '192.168.3.2'
+    # IPv4, on écoute sur le port HTTPS (443)
+    listen 443 ssl;             
+    # Ce serveur réponds à la requête https://172.20.10.2
+    server_name 172.20.10.2;
 
     location / {
         index index.html;
@@ -22,26 +21,10 @@ server {
         proxy_set_header Host $host;  # On passe le header Host
         proxy_set_header X-Real-IP $remote_addr;  # On passe l'adresse IP du client
     }
-
-    ssl_certificate /etc/nginx/ssl/nginx.crt;        # On spécifie le certificat
-    ssl_certificate_key /etc/nginx/ssl/nginx.key;    # et sa clé privée
-
-    # ssl_client_certificate /etc/nginx/ssl/ca.crt;
-    # ssl_verify_client on;
-
-
-    # ssl_protocols TLSv1.2 TLSv1.3;      # On n'autorise que les protocoles récents
-    # ssl_prefer_server_ciphers on;       # On force l'utilisation de nos ciphers
-    # ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
-    # ssl_stapling on;            # On active la réponse OCSP
-    # ssl_stapling_verify on;     # et on la vérifie
-
-    # add_header Strict-Transport-Security "max-age=63072000" always; # On active HSTS contre les attaques d'Homme-du-Milieu
 }
 
-server { 
-    root /var/www/html;        # On précise le répertoire racine du serveur
 
+server { 
     listen 443 ssl;
     server_name blog.epitaf.local;
 
@@ -54,16 +37,7 @@ server {
         proxy_pass http://localhost:8000;
     }
 
-    # On spécifie le certificat et sa clé privée
-    ssl_certificate /etc/nginx/ssl/nginx.crt;        
-    ssl_certificate_key /etc/nginx/ssl/nginx.key;
-
-    ssl_client_certificate /etc/nginx/ssl/ca.crt;
-    ssl_verify_client on;
-
-    # ssl_ciphers "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA HIGH !RC4 !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS";
-    # ssl_stapling on;             On active la réponse OCSP
-    # ssl_stapling_verify on;      et on la vérifie
-
-    # add_header Strict-Transport-Security "max-age=63072000" always;  On active HSTS contre les attaques d'Homme
+    location /errors/ {
+        internal;
+    }
 }
