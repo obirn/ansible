@@ -3,8 +3,19 @@
   apt:
     name:
       - apache2
+      - mariadb-server
+      - python3-pymysql
+      - php
+      - php-mysql
+      - libapache2-mod-php
     update_cache: yes
     state: latest
+  tags: [ system ]
+
+- name: Install PHP Extensions
+  apt: name={{ item }} update_cache=yes state=latest
+  loop: "{{ php_modules }}"
+  tags: [ system ]
 
 - name: Installation de la lib mod_security2 & a2enconf
   apt:
@@ -12,6 +23,7 @@
       - libapache2-mod-security2
     update_cache: yes
     state: present
+  tags: [ system ]
 
 - name: Configuration des ports 8000 et 10000
   lineinfile:
@@ -49,30 +61,9 @@
 - name: Activation de la config mod_securit2
   command: "a2enconf modsecurity.conf"
   notify:
-  - restart apache2
+    - restart apache2
 
-- name: Deploiement des virtualhosts
-  template:
-    src: "{{ item.name }}.conf.j2"
-    dest: "/etc/apache2/sites-available/{{ item.name }}.conf"
-  loop:
-    - { name: "http-vhost" }
-    - { name: "https-vhost" }
-  notify: restart apache2
-
-- name: Activation des sites avec un symlink
-  file:
-    src: "/etc/apache2/sites-available/{{ item }}.conf"
-    dest: "/etc/apache2/sites-enabled/{{ item }}.conf"
-    state: link
-    owner: root
-    group: root
-  loop:
-    - http-vhost
-    - https-vhost
-  notify: restart apache2
-
-- name: Dossiers de logs existent
+- name: Creation des dossiers modsec_audit, http, https
   file:
     path: "{{ item }}"
     state: directory
@@ -81,4 +72,79 @@
   loop:
     - /var/log/apache2/modsec_audit
     - "{{ http_root | default('/var/www/html') }}"
+    - "{{ http_root | default('/var/www/html') }}/wordpress"
     - "{{ https_root | default('/var/www/secure') }}"
+
+# WordPress Configuration
+- name: Download WordPress
+  get_url:
+    url: "{{ wordpress_url }}"
+    dest: "/tmp/wordpress.tar.gz"
+      #checksum: "sha256:https://wordpress.org/wordpress-{{ wordpress_version }}.tar.gz.sha256"
+  tags: [ wordpress ]
+
+- name: Extract WordPress
+  unarchive:
+    src: "/tmp/wordpress.tar.gz"
+    dest: "{{ http_root }}/wordpress"
+    remote_src: yes
+    extra_opts: ["--strip-components=1"]
+    owner: www-data
+    group: www-data
+  tags: [ wordpress ]
+
+- name: Configure WordPress
+  template:
+    src: wp-config.php.j2
+    dest: "{{ http_root }}/wordpress/wp-config.php"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  tags: [ wordpress ]
+
+# Sites Configuration
+- name: Deploiement des virtualhosts
+  template:
+    src: "{{ item.name }}.j2"
+    dest: "/etc/apache2/sites-available/{{ item.name }}"
+  loop:
+    - { name: "{{ http_conf }}" }
+    - { name: "{{ https_conf }}" }
+  notify: restart apache2
+
+- name: Activation des sites avec un symlink
+  file:
+    src: "/etc/apache2/sites-available/{{ item.name }}"
+    dest: "/etc/apache2/sites-enabled/{{ item.name }}"
+    state: link
+    owner: root
+    group: root
+  loop:
+    - { name: "{{ http_conf }}" }
+    - { name: "{{ https_conf }}" }
+  notify: restart apache2
+
+# MySQL Configuration
+- name: Ensure MySQL is running
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+  tags: [ mysql ]
+
+- name: Create MySQL database
+  community.mysql.mysql_db:
+    name: "{{ mysql_db }}"
+    state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags: [ mysql_db ]
+
+- name: Create MySQL user
+  community.mysql.mysql_user:
+    name: "{{ mysql_user }}"
+    password: "{{ mysql_password }}"
+    priv: "{{ mysql_db }}.*:ALL"
+    host: localhost
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags: [ mysql_user ]
+

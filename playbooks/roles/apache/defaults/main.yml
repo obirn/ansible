@@ -1,6 +1,9 @@
 ---
 apache_conf_dir: "/etc/apache2/conf-available"
 
+# System Settings
+php_modules: [ 'php-curl', 'php-gd', 'php-mbstring', 'php-xml', 'php-xmlrpc', 'php-soap', 'php-intl', 'php-zip' ]
+
 # mod_security
 sec_audit_log: "/var/log/apache2/modsec_audit.log"  # Chemin corrigé
 sec_audit_log_parts: "ABIFHZ"                       # Headers + Body
@@ -8,10 +11,23 @@ sec_server_signature: "Apache"
 sec_rule_remove_by_id: "960017,970901,960015"
 
 # Info WordPress
+wordpress_version: "6.4.2"
+wordpress_url: "https://wordpress.org/wordpress-{{ wordpress_version }}.tar.gz"
+
 http_host: "blog.epitaf.local"
-https_host: "secure.epitaf.local"
 http_root: "/var/www/html"
+http_conf: "http-vhost.conf"
+http_port: "8000"
+https_host: "secure.epitaf.local"
 https_root: "/var/www/secure"
+https_conf: "https-vhost.conf"
+https_port: "10000"
+
+# MySQL Settings
+mysql_root_password: "root_password"
+mysql_db: "wordpress"
+mysql_user: "infra_01"
+mysql_password: "password"
 
 # TLS
 # ssl_cert: "/etc/letsencrypt/live/example.com/fullchain.pem"

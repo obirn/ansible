@@ -1,4 +1,4 @@
-<VirtualHost *:8000>
+<VirtualHost *:{{ http_port }}>
     ServerName {{ http_host | default('localhost') }}
     DocumentRoot {{ http_root | default('/var/www/html') }}
 
@@ -8,6 +8,14 @@
     # Log l'IP réelle même derrière un proxy
     LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b" proxy
     CustomLog ${APACHE_LOG_DIR}/http-ip.log proxy
+
+   <Directory {{ http_root }}>
+         Options -Indexes
+   </Directory>
+
+   <IfModule mod_dir.c>
+       DirectoryIndex index.php index.html index.cgi index.pl  index.xhtml index.html
+   </IfModule>
 
     IncludeOptional /etc/modsecurity/modsecurity.conf
 </VirtualHost>
