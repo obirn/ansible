@@ -32,3 +32,11 @@ mysql_password: "password"
 # TLS
 # ssl_cert: "/etc/letsencrypt/live/example.com/fullchain.pem"
 # ssl_key: "/etc/letsencrypt/live/example.com/privkey.pem"
+
+# Kerberos
+kerberos_conf: "krb5.conf"
+kerberos_realm: "EPITAF.LOCAL"
+kerberos_domain: "epitaf.local"
+kerberos_dc: "dc01.epitaf.local"
+kerberos_service_name: "HTTP/infra_01.epitaf.local@EPITAF.LOCAl"    # Verifier le fqdn(le nom du domaine) : HTTP/<fqdn>@<REALM>
+kerberos_keytab: "/etc/apache2/http.keytab"                         # Le fichier contenant les identifiants chiffrés du service.

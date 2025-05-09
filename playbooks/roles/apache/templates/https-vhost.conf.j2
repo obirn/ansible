@@ -16,5 +16,20 @@
     LogFormat "%h %l %u %t \"%r\" %>s %b" forwarded
     CustomLog ${APACHE_LOG_DIR}/https-ip.log forwarded
 
+   # WordPress
+   <Directory {{ https_root }}>
+         Options -Indexes
+   </Directory>
+   <IfModule mod_dir.c>
+       DirectoryIndex index.php index.html index.cgi index.pl  index.xhtml index.html
+   </IfModule>
+
+    # Authentification Kerberos
+    <Location /blog/>
+   	AuthType GSSAPI
+    	AuthName "Kerberos Authentication"
+    	Require valid-user
+    </Location>
+
     IncludeOptional /etc/modsecurity/modsecurity.conf
 </VirtualHost>

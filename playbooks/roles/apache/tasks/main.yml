@@ -1,15 +1,13 @@
 ---
-- name: Installation apache2
-  apt:
-    name:
+- name: Installation apache2 & mariadb & php
+  apt: name={{ item }} update_cache=yes state=latest
+  loop:    
       - apache2
       - mariadb-server
       - python3-pymysql
       - php
       - php-mysql
       - libapache2-mod-php
-    update_cache: yes
-    state: latest
   tags: [ system ]
 
 - name: Install PHP Extensions
@@ -17,13 +15,29 @@
   loop: "{{ php_modules }}"
   tags: [ system ]
 
-- name: Installation de la lib mod_security2 & a2enconf
-  apt:
-    name:
-      - libapache2-mod-security2
-    update_cache: yes
-    state: present
+- name: Installation de la lib mod_security2
+  apt: name={{ item }} update_cache=yes state=present
+  loop:
+    - libapache2-mod-security2
   tags: [ system ]
+
+# Kerberos
+- name: Installation des dependances Kerberos/TLS
+  apt: name={{ item }} update_cache=yes state=latest
+  loop:    
+      - krb5-user
+      - libkrb5-dev
+      - python3-dev
+      - ssl-cert
+  tags: [ system ]
+
+- name: Deploiement de la configuration Kerberos
+  template:
+    src: "{{ item.name}}.j2"
+    dest: "/etc/{{ item.name }}"
+    mode: 0644
+  loop:
+    - { name: "{{ kerberos_conf }}"}
 
 - name: Configuration des ports 8000 et 10000
   lineinfile:
@@ -76,14 +90,13 @@
     - "{{ https_root | default('/var/www/secure') }}"
 
 # WordPress Configuration
-- name: Download WordPress
+- name: Telecharger WordPress
   get_url:
     url: "{{ wordpress_url }}"
     dest: "/tmp/wordpress.tar.gz"
-      #checksum: "sha256:https://wordpress.org/wordpress-{{ wordpress_version }}.tar.gz.sha256"
   tags: [ wordpress ]
 
-- name: Extract WordPress
+- name: Extraction WordPress
   unarchive:
     src: "/tmp/wordpress.tar.gz"
     dest: "{{ http_root }}/wordpress"
@@ -93,13 +106,25 @@
     group: www-data
   tags: [ wordpress ]
 
-- name: Configure WordPress
+- name: Creation d'un symlink HTTP/wordpress -> HTTPS/blog
+  file:
+    src: "{{ http_root }}/wordpress"
+    dest: "{{ https_root }}/blog"
+    state: link
+    owner: www-data
+    group: www-data
+  tags: [wordpress]
+
+- name: Configuration WordPress
   template:
     src: wp-config.php.j2
-    dest: "{{ http_root }}/wordpress/wp-config.php"
+    dest: "{{ item }}"
     owner: www-data
     group: www-data
     mode: '0644'
+  loop:
+    - "{{ http_root }}/wordpress/wp-config.php"
+    - "{{ https_root }}/blog/wp-config.php"
   tags: [ wordpress ]
 
 # Sites Configuration

@@ -9,13 +9,18 @@
     LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b" proxy
     CustomLog ${APACHE_LOG_DIR}/http-ip.log proxy
 
+   # WordPress
    <Directory {{ http_root }}>
          Options -Indexes
    </Directory>
-
    <IfModule mod_dir.c>
        DirectoryIndex index.php index.html index.cgi index.pl  index.xhtml index.html
    </IfModule>
+
+    # Désactive Kerberos
+    <IfModule mod_auth_kerb.c>
+        KrbMethodK5Passwd Off
+    </IfModule>
 
     IncludeOptional /etc/modsecurity/modsecurity.conf
 </VirtualHost>
