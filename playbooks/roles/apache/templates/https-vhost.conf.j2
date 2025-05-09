@@ -1,0 +1,20 @@
+<VirtualHost *:10000>
+    ServerName {{ https_host | default('localhost') }}
+    DocumentRoot {{ https_root | default('/var/www/secure') }}
+
+    # TLS
+    {% if ssl_cert is defined and ssl_key is defined %}
+    SSLEngine on
+    SSLCertificateFile {{ ssl_cert }}
+    SSLCertificateKeyFile {{ ssl_key }}
+    {% endif %}
+
+    ErrorLog ${APACHE_LOG_DIR}/https-error.log
+    CustomLog ${APACHE_LOG_DIR}/https-access.log combined
+
+    # Format de log avec IP réelle
+    LogFormat "%h %l %u %t \"%r\" %>s %b" forwarded
+    CustomLog ${APACHE_LOG_DIR}/https-ip.log forwarded
+
+    IncludeOptional /etc/modsecurity/modsecurity.conf
+</VirtualHost>

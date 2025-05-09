@@ -1,0 +1,13 @@
+<VirtualHost *:8000>
+    ServerName {{ http_host | default('localhost') }}
+    DocumentRoot {{ http_root | default('/var/www/html') }}
+
+    ErrorLog ${APACHE_LOG_DIR}/http-error.log
+    CustomLog ${APACHE_LOG_DIR}/http-access.log combined
+
+    # Log l'IP réelle même derrière un proxy
+    LogFormat "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b" proxy
+    CustomLog ${APACHE_LOG_DIR}/http-ip.log proxy
+
+    IncludeOptional /etc/modsecurity/modsecurity.conf
+</VirtualHost>

@@ -13,6 +13,14 @@
     update_cache: yes
     state: present
 
+- name: Configuration des ports 8000 et 10000
+  lineinfile:
+    path: /etc/apache2/ports.conf
+    line: "Listen {{ item }}"
+    state: present
+  loop: [8000, 10000]
+  notify: restart apache2
+
 - name: Le dossier de log existe 
   file:
     path: /var/log/apache2
@@ -41,4 +49,36 @@
 - name: Activation de la config mod_securit2
   command: "a2enconf modsecurity.conf"
   notify:
-  - reload apache2
+  - restart apache2
+
+- name: Deploiement des virtualhosts
+  template:
+    src: "{{ item.name }}.conf.j2"
+    dest: "/etc/apache2/sites-available/{{ item.name }}.conf"
+  loop:
+    - { name: "http-vhost" }
+    - { name: "https-vhost" }
+  notify: restart apache2
+
+- name: Activation des sites avec un symlink
+  file:
+    src: "/etc/apache2/sites-available/{{ item }}.conf"
+    dest: "/etc/apache2/sites-enabled/{{ item }}.conf"
+    state: link
+    owner: root
+    group: root
+  loop:
+    - http-vhost
+    - https-vhost
+  notify: restart apache2
+
+- name: Dossiers de logs existent
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: www-data
+    group: www-data
+  loop:
+    - /var/log/apache2/modsec_audit
+    - "{{ http_root | default('/var/www/html') }}"
+    - "{{ https_root | default('/var/www/secure') }}"
