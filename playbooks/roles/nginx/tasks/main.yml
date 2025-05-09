@@ -8,6 +8,13 @@
     - nginx
     - nginx-extras
 
+- name: Copier la page 404
+  ansible.builtin.copy:
+    src: sites/404.html
+    dest: /var/www/html/404.html
+    mode: '0644'
+  become: true
+
 - name: Copier le site web static 'top gun'
   ansible.builtin.copy:
     src: sites/topgun/
