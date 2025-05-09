@@ -43,9 +43,10 @@
     group: TOPGUN
     shell: /bin/bash
     create_home: yes
+    password: "{{ item.password | default(omit) }}"
     state: present
   loop:
-    - { name: 'maverik' }
+    - { name: 'maverik', password: '*' }
     - { name: 'charlie' }
     - { name: 'goose' }
   become: yes
@@ -57,7 +58,7 @@
     mode: '0440'
   loop:
     - { name: 'maverik', rule: 'maverik ALL=(ALL) NOPASSWD: /sbin/reboot, /usr/bin/apt update, /usr/bin/apt upgrade' }
-    - { name: 'charlie', rule: 'charlie ALL=(ALL) ALL' }
+    - { name: 'charlie', rule: 'Defaults:charlie timestamp_timeout=15\ncharlie ALL=(ALL) ALL' }
   notify: Restart SSH
   become: yes
 
@@ -65,4 +66,11 @@
   ansible.builtin.user:
     name: goose
     shell: /usr/sbin/nologin
+  become: yes
+
+- name: Déployer la clé publique SSH de charlie
+  ansible.builtin.authorized_key:
+    user: charlie
+    key: "{{ lookup('file', 'files/charlie_key.pub') }}"
+    state: present
   become: yes
