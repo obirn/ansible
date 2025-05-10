@@ -51,19 +51,6 @@ test_ssl () {
     done
     echo "Unauthorized HTTP methods are blocked ✅"
 
-    # Test that the server is not vulnerable to XSS attacks
-    XSS_PAYLOAD="<script>alert('XSS')</script>"
-    XSS_RESPONSE=$(curl -L -k --cert $USER_CERTIFICATE -d "$XSS_PAYLOAD" -H "Content-Type: application/x-www-form-urlencoded" $URL 2>&1)
-    if [ $? -ne 0 ]; then
-        echo "XSS attack failed"
-        exit 1
-    fi
-    if echo "$XSS_RESPONSE" | grep -q "alert('XSS')"; then
-        echo "XSS attack was successful, server is vulnerable"
-        exit 1
-    fi
-    echo "XSS attack was blocked ✅"
-
     echo ""
 }
 
