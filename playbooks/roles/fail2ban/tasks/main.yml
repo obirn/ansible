@@ -1,0 +1,96 @@
+---
+- name: Installation de fail2ban et rsyslog
+  apt:
+    name:
+      - fail2ban
+      - rsyslog
+    state: present
+    update_cache: yes
+
+- name: Check rsyslog est actif
+  systemd:
+    name: rsyslog
+    enabled: yes
+    state: started
+
+- name: Creation du dossier fail2ban
+  file:
+    path: /etc/fail2ban/jail.d
+    state: directory
+    mode: 0755
+
+- name: Creation de auth.log
+  file:
+    path: /var/log/auth.log
+    state: touch
+    owner: root
+    group: adm
+    mode: 0640
+
+- name: Copie la config jail
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: 0644
+  notify: restart fail2ban
+
+- name: Configuration du filtrage des requetes sur nginx
+  template:
+    src: nginx-req-method.conf.j2
+    dest: /etc/fail2ban/filter.d/nginx-req-method.conf
+    mode: 0644
+  notify: restart fail2ban
+
+- name: Configuration du filtre portscan
+  template:
+    src: portscan.conf.j2
+    dest: /etc/fail2ban/filter.d/portscan.conf
+    mode: 0644
+  notify: restart fail2ban
+
+- name: Check la creation de l'existance du dossier fail2ban
+  file:
+    path: /var/run/fail2ban
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Verifie  la configuration fail2ban
+  command: fail2ban-client -x start
+  register: fail2ban_test
+  changed_when: false
+  ignore_errors: true
+
+- name: Check que fail2ban est actif
+  systemd:
+    name: fail2ban
+    enabled: yes
+    state: started
+
+- name: Configuration des regles firewall
+  block:
+    - name: Install iptables-persistent
+      apt:
+        name: iptables-persistent
+        state: present
+
+    - name: Drop toutes les connexions entrantes IPv6
+      iptables:
+        chain: INPUT
+        protocol: ipv6-icmp
+        jump: DROP
+        comment: "Drop all incoming IPv6 traffic"
+      register: ip6tables_result
+
+    - name: Rejete toutes les connexions sortantes en IPv6
+      iptables:
+        chain: OUTPUT
+        protocol: ipv6-icmp
+        jump: REJECT
+        comment: "Reject all outgoing IPv6 traffic"
+      register: ip6tables_result_out
+
+    - name: Sauvegarde de la iptable (persistance au reboot)
+      command: /usr/sbin/netfilter-persistent save
+      when: ip6tables_result.changed or ip6tables_result_out.changed

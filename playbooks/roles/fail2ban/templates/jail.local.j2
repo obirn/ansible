@@ -1,0 +1,34 @@
+[DEFAULT]
+ignoreip = 127.0.0.1/8
+bantime = 300
+findtime = 600
+maxretry = 3
+destemail = root@localhost
+sender = root@localhost
+action = %(action_mwl)s
+banaction = iptables-multiport
+banaction_allports = iptables-allports
+allowipv6 = false
+
+[sshd]
+enabled = true
+port = 22
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 300
+
+[nginx-req-method]
+enabled = true
+port = http,https
+filter = nginx-req-method
+logpath = /var/log/nginx/access.log
+maxretry = 3
+bantime = 300
+
+[portscan]
+enabled = true
+filter = portscan
+logpath = /var/log/syslog
+maxretry = 1
+bantime = 300

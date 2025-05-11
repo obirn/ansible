@@ -11,3 +11,6 @@
     - name: Load and execute SSH role
       ansible.builtin.include_role:
         name: ssh
+    - name: Load and execute FAIL2BAN role
+      ansible.builtin.include_role:
+        name: fail2ban
