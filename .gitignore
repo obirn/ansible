@@ -1,3 +1,5 @@
 *.key
 *.pfx
 .vscode/
+*.pem
+*.p12

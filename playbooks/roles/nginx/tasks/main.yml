@@ -24,16 +24,16 @@
   notify: Restart nginx
 
 - name: Copier la configuration globale
-  ansible.builtin.template:
-    src: nginx.conf.j2
+  ansible.builtin.copy:
+    src: nginx.conf
     dest: /etc/nginx/nginx.conf
     mode: '0644'
   become: true
   notify: Restart nginx
 
 - name: Copier la configuration du serveur web
-  ansible.builtin.template:
-    src: default.conf.j2
+  ansible.builtin.copy:
+    src: default.conf
     dest: /etc/nginx/sites-available/default
     mode: '0644'
   become: true
