@@ -24,12 +24,12 @@
        DirectoryIndex index.php index.html index.cgi index.pl  index.xhtml index.html
    </IfModule>
 
-    # Authentification Kerberos
-    <Location /blog/>
-   	AuthType GSSAPI
-    	AuthName "Kerberos Authentication"
-    	Require valid-user
-    </Location>
-
     IncludeOptional /etc/modsecurity/modsecurity.conf
+
+    # Authentification Kerberos
+    #<Location /blog/>
+   	    #AuthType GSSAPI
+    	#AuthName "Kerberos Authentication"
+    	#Require valid-user
+    #</Location>
 </VirtualHost>

@@ -64,6 +64,7 @@
     - headers
     - security2
 
+# mod_security
 - name: Deploiement du fichier modsecurity.conf
   template:
     src: "modsecurity.conf.j2"
@@ -85,9 +86,9 @@
     group: www-data
   loop:
     - /var/log/apache2/modsec_audit
-    - "{{ http_root | default('/var/www/html') }}"
     - "{{ http_root | default('/var/www/html') }}/wordpress"
-    - "{{ https_root | default('/var/www/secure') }}"
+    - "{{ https_root | default('/var/www/secure') }}/blog"
+    - "{{ https_root | default('/var/www/secure') }}/stat"
 
 # WordPress Configuration
 - name: Telecharger WordPress
@@ -96,7 +97,7 @@
     dest: "/tmp/wordpress.tar.gz"
   tags: [ wordpress ]
 
-- name: Extraction WordPress
+- name: Extraction WordPress vers http
   unarchive:
     src: "/tmp/wordpress.tar.gz"
     dest: "{{ http_root }}/wordpress"
@@ -106,14 +107,15 @@
     group: www-data
   tags: [ wordpress ]
 
-- name: Creation d'un symlink HTTP/wordpress -> HTTPS/blog
-  file:
-    src: "{{ http_root }}/wordpress"
+- name: Extraction WordPress vers https
+  unarchive:
+    src: "/tmp/wordpress.tar.gz"
     dest: "{{ https_root }}/blog"
-    state: link
+    remote_src: yes
+    extra_opts: ["--strip-components=1"]
     owner: www-data
     group: www-data
-  tags: [wordpress]
+  tags: [ wordpress ]
 
 - name: Configuration WordPress
   template:
@@ -123,9 +125,26 @@
     group: www-data
     mode: '0644'
   loop:
-    - "{{ http_root }}/wordpress/wp-config.php"
-    - "{{ https_root }}/blog/wp-config.php"
+    - "{{ http_root}}/wordpress/wp-config.php"
+    - "{{ https_root}}/blog/wp-config.php"
   tags: [ wordpress ]
+
+# Configuration MATOMO
+- name: Télécharger Matomo
+  get_url:
+    url: "https://builds.matomo.org/matomo-latest.tar.gz"
+    dest: "/tmp/matomo-latest.tar.gz"
+  tags: [ matomo ]
+
+- name: Extraire Matomo
+  unarchive:
+    src: "/tmp/matomo-latest.tar.gz"
+    dest: "{{ https_root }}/stat"
+    remote_src: yes
+    extra_opts: ["--strip-components=1"]
+    owner: www-data
+    group: www-data
+  tags: [ matomo ]
 
 # Sites Configuration
 - name: Deploiement des virtualhosts

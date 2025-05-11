@@ -92,13 +92,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 /** Sets up WordPress vars and included files. */
 require_once( ABSPATH . 'wp-settings.php' );
 
-/** Authentification Kerberos **/
-if (isset($_SERVER['REMOTE_USER'])) {
-    $user = explode('@', $_SERVER['REMOTE_USER'])[0];
-    define('WP_AUTH_COOKIE_VERSION', 'kerberos_auth');
-    
-    // Auto-login basé sur l'AD
-    add_filter('authenticate', function($user) {
-        return get_user_by('login', $user);
-    }, 10, 3);
-}
+/** Authentification Kerberos 
+*if (isset($_SERVER['REMOTE_USER'])) {
+*    $user = explode('@', $_SERVER['REMOTE_USER'])[0];
+*    define('WP_AUTH_COOKIE_VERSION', 'kerberos_auth');
+*    
+*    // Auto-login basé sur l'AD
+*    add_filter('authenticate', function($user) {
+*        return get_user_by('login', $user);
+*    }, 10, 3);
+*}
+*/

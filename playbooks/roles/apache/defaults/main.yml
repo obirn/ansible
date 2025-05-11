@@ -13,6 +13,7 @@ sec_rule_remove_by_id: "960017,970901,960015"
 # Info WordPress
 wordpress_version: "6.4.2"
 wordpress_url: "https://wordpress.org/wordpress-{{ wordpress_version }}.tar.gz"
+wordpress_root: "/var/www/wordpress"
 
 http_host: "blog.epitaf.local"
 http_root: "/var/www/html"
@@ -40,3 +41,6 @@ kerberos_domain: "epitaf.local"
 kerberos_dc: "dc01.epitaf.local"
 kerberos_service_name: "HTTP/infra_01.epitaf.local@EPITAF.LOCAl"    # Verifier le fqdn(le nom du domaine) : HTTP/<fqdn>@<REALM>
 kerberos_keytab: "/etc/apache2/http.keytab"                         # Le fichier contenant les identifiants chiffrés du service.
+
+# MATOMO
+matomo_root: "/var/www/matomo"
