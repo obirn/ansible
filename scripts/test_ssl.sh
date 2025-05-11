@@ -1,6 +1,6 @@
 #!/bin/sh
 
-HOST_IP="172.20.10.2"
+HOST_IP="192.168.3.2"
 HOST_DOMAIN="blog.epitaf.local"
 USER_CERTIFICATE="scripts/ssl/AD_User.pem"
 
