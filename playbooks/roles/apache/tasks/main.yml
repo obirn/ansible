@@ -232,5 +232,4 @@
         priv: "{{ mysql_db }}.*:ALL"
         host: localhost
         login_unix_socket: /var/run/mysqld/mysqld.sock
-        column_case_sensitive: true
       tags: [mysql_user]
