@@ -4,3 +4,6 @@
     - name: Load and execute NGINX role
       ansible.builtin.include_role:
         name: nginx
+    - name: Load and execute APACHE role
+      ansible.builtin.include_role:
+        name: apache

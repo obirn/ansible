@@ -1,194 +1,236 @@
 ---
-- name: Installation apache2 & mariadb & php
-  apt: name={{ item }} update_cache=yes state=latest
-  loop:    
-      - apache2
-      - mariadb-server
-      - python3-pymysql
-      - php
-      - php-mysql
-      - libapache2-mod-php
-  tags: [ system ]
+- name: Wrapper sur les tâches qui ont besoin de sudo
+  become: true
+  block:
+    - name: Installation apache2 & mariadb & php
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:
+        - apache2
+        - mariadb-server
+        - python3-pymysql
+        - php
+        - php-mysql
+        - libapache2-mod-php
+      tags: [system]
 
-- name: Install PHP Extensions
-  apt: name={{ item }} update_cache=yes state=latest
-  loop: "{{ php_modules }}"
-  tags: [ system ]
+    - name: Installation extensions php
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop: "{{ php_modules }}"
+      tags: [system]
 
-- name: Installation de la lib mod_security2
-  apt: name={{ item }} update_cache=yes state=present
-  loop:
-    - libapache2-mod-security2
-  tags: [ system ]
 
-# Kerberos
-- name: Installation des dependances Kerberos/TLS
-  apt: name={{ item }} update_cache=yes state=latest
-  loop:    
-      - krb5-user
-      - libkrb5-dev
-      - python3-dev
-      - ssl-cert
-  tags: [ system ]
+    - name: Installation de la lib mod_security2
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:
+        - libapache2-mod-security2
+      tags: [system]
 
-- name: Deploiement de la configuration Kerberos
-  template:
-    src: "{{ item.name}}.j2"
-    dest: "/etc/{{ item.name }}"
-    mode: 0644
-  loop:
-    - { name: "{{ kerberos_conf }}"}
+    # Kerberos
+    - name: Installation des dependances Kerberos/TLS
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      loop:
+        - krb5-user
+        - libkrb5-dev
+        - python3-dev
+        - ssl-cert
+      tags: [system]
 
-- name: Configuration des ports 8000 et 10000
-  lineinfile:
-    path: /etc/apache2/ports.conf
-    line: "Listen {{ item }}"
-    state: present
-  loop: [8000, 10000]
-  notify: restart apache2
+    - name: Deploiement de la configuration Kerberos
+      ansible.builtin.template:
+        src: "{{ item.name }}.j2"
+        dest: "/etc/{{ item.name }}"
+        mode: "0644"
+      loop:
+        - { name: "{{ kerberos_conf }}"}
 
-- name: Le dossier de log existe 
-  file:
-    path: /var/log/apache2
-    state: directory
-    owner: root
-    group: www-data
-    mode: 0775
+    - name: Configuration des ports 8000 et 10000
+      ansible.builtin.lineinfile:
+        path: /etc/apache2/ports.conf
+        line: "Listen {{ item }}"
+        state: present
+      loop: [8000, 10000]
+      notify: Restart apache2
 
-- name: Activation des modules requis
-  apache2_module:
-    state: present
-    name: "{{ item }}"
-  loop:
-    - rewrite
-    - headers
-    - security2
+    - name: Le dossier de log existe
+      ansible.builtin.file:
+        path: /var/log/apache2
+        state: directory
+        owner: root
+        group: www-data
+        mode: "0775"
 
-# mod_security
-- name: Deploiement du fichier modsecurity.conf
-  template:
-    src: "modsecurity.conf.j2"
-    dest: "{{ apache_conf_dir }}/modsecurity.conf"
-    owner: root
-    group: root
-    mode: 0644
+    - name: Activation des modules requis
+      community.general.apache2_module:
+        state: present
+        name: "{{ item }}"
+      loop:
+        - rewrite
+        - headers
+        - security2
 
-- name: Activation de la config mod_securit2
-  command: "a2enconf modsecurity.conf"
-  notify:
-    - restart apache2
+    # mod_security
+    - name: Deploiement du fichier modsecurity.conf
+      ansible.builtin.template:
+        src: "modsecurity.conf.j2"
+        dest: "{{ apache_conf_dir }}/modsecurity.conf"
+        owner: root
+        group: root
+        mode: "0644"
 
-- name: Creation des dossiers modsec_audit, http, https
-  file:
-    path: "{{ item }}"
-    state: directory
-    owner: www-data
-    group: www-data
-  loop:
-    - /var/log/apache2/modsec_audit
-    - "{{ http_root | default('/var/www/html') }}/wordpress"
-    - "{{ https_root | default('/var/www/secure') }}/blog"
-    - "{{ https_root | default('/var/www/secure') }}/stat"
+    - name: Activation de la config mod_securit2
+      ansible.builtin.command: "a2enconf modsecurity.conf"
+      notify:
+        - Restart apache2
 
-# WordPress Configuration
-- name: Telecharger WordPress
-  get_url:
-    url: "{{ wordpress_url }}"
-    dest: "/tmp/wordpress.tar.gz"
-  tags: [ wordpress ]
+    - name: Creation des dossiers modsec_audit, http, https
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0775"
+      loop:
+        - /var/log/apache2/modsec_audit
+        - "{{ http_root | default('/var/www/html') }}/wordpress"
+        - "{{ https_root | default('/var/www/secure') }}/blog"
+        - "{{ https_root | default('/var/www/secure') }}/stat"
 
-- name: Extraction WordPress vers http
-  unarchive:
-    src: "/tmp/wordpress.tar.gz"
-    dest: "{{ http_root }}/wordpress"
-    remote_src: yes
-    extra_opts: ["--strip-components=1"]
-    owner: www-data
-    group: www-data
-  tags: [ wordpress ]
+    # WordPress Configuration
+    - name: Telecharger WordPress
+      ansible.builtin.get_url:
+        url: "{{ wordpress_url }}"
+        dest: "/tmp/wordpress.tar.gz"
+        mode: '0644'
+      tags: [wordpress]
 
-- name: Extraction WordPress vers https
-  unarchive:
-    src: "/tmp/wordpress.tar.gz"
-    dest: "{{ https_root }}/blog"
-    remote_src: yes
-    extra_opts: ["--strip-components=1"]
-    owner: www-data
-    group: www-data
-  tags: [ wordpress ]
+    - name: Extraction WordPress vers http
+      ansible.builtin.unarchive:
+        src: "/tmp/wordpress.tar.gz"
+        dest: "{{ http_root }}/wordpress"
+        remote_src: true
+        extra_opts: ["--strip-components=1"]
+        owner: www-data
+        group: www-data
+      tags: [wordpress]
 
-- name: Configuration WordPress
-  template:
-    src: wp-config.php.j2
-    dest: "{{ item }}"
-    owner: www-data
-    group: www-data
-    mode: '0644'
-  loop:
-    - "{{ http_root}}/wordpress/wp-config.php"
-    - "{{ https_root}}/blog/wp-config.php"
-  tags: [ wordpress ]
+    - name: Extraction WordPress vers https
+      ansible.builtin.unarchive:
+        src: "/tmp/wordpress.tar.gz"
+        dest: "{{ https_root }}/blog"
+        remote_src: true
+        extra_opts: ["--strip-components=1"]
+        owner: www-data
+        group: www-data
+      tags: [wordpress]
 
-# Configuration MATOMO
-- name: Télécharger Matomo
-  get_url:
-    url: "https://builds.matomo.org/matomo-latest.tar.gz"
-    dest: "/tmp/matomo-latest.tar.gz"
-  tags: [ matomo ]
+    - name: Configuration WordPress
+      ansible.builtin.template:
+        src: wp-config.php.j2
+        dest: "{{ item }}"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      loop:
+        - "{{ http_root }}/wordpress/wp-config.php"
+      tags: [wordpress]
 
-- name: Extraire Matomo
-  unarchive:
-    src: "/tmp/matomo-latest.tar.gz"
-    dest: "{{ https_root }}/stat"
-    remote_src: yes
-    extra_opts: ["--strip-components=1"]
-    owner: www-data
-    group: www-data
-  tags: [ matomo ]
+    - name: Configuration Ports apache2
+      ansible.builtin.template:
+        src: ports.conf.j2
+        dest: "/etc/apache2/ports.conf"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      tags: [apache2]
 
-# Sites Configuration
-- name: Deploiement des virtualhosts
-  template:
-    src: "{{ item.name }}.j2"
-    dest: "/etc/apache2/sites-available/{{ item.name }}"
-  loop:
-    - { name: "{{ http_conf }}" }
-    - { name: "{{ https_conf }}" }
-  notify: restart apache2
+    - name: Copier la chaîne de certificats TLS
+      ansible.builtin.copy:
+        src: "ssl/fullchain-nginx.pem"
+        dest: "/etc/ssl/certs/"
+        owner: www-data
+        mode: '0644'
 
-- name: Activation des sites avec un symlink
-  file:
-    src: "/etc/apache2/sites-available/{{ item.name }}"
-    dest: "/etc/apache2/sites-enabled/{{ item.name }}"
-    state: link
-    owner: root
-    group: root
-  loop:
-    - { name: "{{ http_conf }}" }
-    - { name: "{{ https_conf }}" }
-  notify: restart apache2
+    - name: Copier la clé privée TLS
+      ansible.builtin.copy:
+        src: "ssl/nginx.key"
+        dest: "/etc/ssl/private/"
+        owner: www-data
+        mode: '0644'
 
-# MySQL Configuration
-- name: Ensure MySQL is running
-  service:
-    name: mariadb
-    state: started
-    enabled: yes
-  tags: [ mysql ]
+    # Configuration MATOMO
+    - name: Télécharger Matomo
+      ansible.builtin.get_url:
+        url: "https://builds.matomo.org/matomo-latest.tar.gz"
+        dest: "/tmp/matomo-latest.tar.gz"
+        mode: '0644'
+      tags: [matomo]
 
-- name: Create MySQL database
-  community.mysql.mysql_db:
-    name: "{{ mysql_db }}"
-    state: present
-    login_unix_socket: /var/run/mysqld/mysqld.sock
-  tags: [ mysql_db ]
+    - name: Extraire Matomo
+      ansible.builtin.unarchive:
+        src: "/tmp/matomo-latest.tar.gz"
+        dest: "{{ https_root }}/stat"
+        remote_src: true
+        extra_opts: ["--strip-components=1"]
+        owner: www-data
+        group: www-data
+      tags: [matomo]
 
-- name: Create MySQL user
-  community.mysql.mysql_user:
-    name: "{{ mysql_user }}"
-    password: "{{ mysql_password }}"
-    priv: "{{ mysql_db }}.*:ALL"
-    host: localhost
-    login_unix_socket: /var/run/mysqld/mysqld.sock
-  tags: [ mysql_user ]
+    # Sites Configuration
+    - name: Deploiement des virtualhosts
+      ansible.builtin.template:
+        src: "{{ item.name }}.j2"
+        dest: "/etc/apache2/sites-available/{{ item.name }}"
+        mode: "0644"
+      loop:
+        - { name: "{{ http_conf }}" }
+        - { name: "{{ https_conf }}" }
+      notify: Restart apache2
 
+    - name: Activation des sites avec un symlink
+      ansible.builtin.file:
+        src: "/etc/apache2/sites-available/{{ item.name }}"
+        dest: "/etc/apache2/sites-enabled/{{ item.name }}"
+        state: link
+        owner: root
+        group: root
+      loop:
+        - { name: "{{ http_conf }}" }
+        - { name: "{{ https_conf }}" }
+      notify: Restart apache2
+
+    # MySQL Configuration
+    - name: Ensure MySQL is running
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true
+      tags: [mysql]
+
+    - name: Create MySQL database
+      community.mysql.mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: [mysql_db]
+
+    - name: Create MySQL user
+      community.mysql.mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        priv: "{{ mysql_db }}.*:ALL"
+        host: localhost
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        column_case_sensitive: true
+      tags: [mysql_user]
