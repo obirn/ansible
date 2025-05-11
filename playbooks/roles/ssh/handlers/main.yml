@@ -1,0 +1,7 @@
+---
+- name: Restart SSH
+  become: true
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+  listen: Restart SSH

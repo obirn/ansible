@@ -1,0 +1,9 @@
+Port 22
+AddressFamily inet
+PermitRootLogin no
+LogLevel VERBOSE
+ChallengeResponseAuthentication yes
+UsePAM yes
+AuthenticationMethods publickey,keyboard-interactive
+PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server
