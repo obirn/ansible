@@ -51,14 +51,21 @@
     - { name: 'goose' }
   become: yes
 
-- name: Mise en place de sudoers pour les utilisateurs
+- name: Mise en place de sudoers pour maverik
   ansible.builtin.copy:
-    dest: "/etc/sudoers.d/{{ item.name }}"
-    content: "{{ item.rule }}"
+    dest: /etc/sudoers.d/maverik
+    content: 'maverik ALL=(ALL) NOPASSWD: /sbin/reboot, /usr/bin/apt update, /usr/bin/apt upgrade'
     mode: '0440'
-  loop:
-    - { name: 'maverik', rule: 'maverik ALL=(ALL) NOPASSWD: /sbin/reboot, /usr/bin/apt update, /usr/bin/apt upgrade' }
-    - { name: 'charlie', rule: 'Defaults:charlie timestamp_timeout=15\ncharlie ALL=(ALL) ALL' }
+  notify: Restart SSH
+  become: yes
+
+- name: Mise en place de sudoers pour charlie
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/charlie
+    content: |
+      Defaults:charlie timestamp_timeout=15
+      charlie ALL=(ALL) ALL
+    mode: '0440'
   notify: Restart SSH
   become: yes
 
